@@ -1,0 +1,6 @@
+reflex
+reflex==0.7.12
+openai
+python-dotenv
+psycopg2-binary
+
