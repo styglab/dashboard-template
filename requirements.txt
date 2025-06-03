@@ -1,5 +1,6 @@
 reflex
 reflex==0.7.12
+reflex-local-auth
 openai
 python-dotenv
 psycopg2-binary

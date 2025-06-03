@@ -1,8 +1,11 @@
 import reflex as rx
 #
 from ..components.navbar import navbar_buttons
-
-def base_page(child: rx.Component, *args):
+from .dashboard import dashboard_page
+from ..auth.state import SessionState
+#
+#
+def hello_page(child: rx.Component, *args, **kwargs) -> rx.Component:
     return rx.fragment(
         navbar_buttons(),
         rx.box(
@@ -16,3 +19,13 @@ def base_page(child: rx.Component, *args):
         id="my-base-container",
     )
     
+
+def base_page(child: rx.Component, *args, **kwargs) -> rx.Component:
+    is_logged_in = True
+
+    return rx.cond(
+        SessionState.is_authenticated,
+        dashboard_page(child, *args, **kwargs),
+        hello_page(child, *args, **kwargs),
+    )
+
