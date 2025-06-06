@@ -15,5 +15,4 @@ def dashboard_page(child: rx.Component, *args, **kwargs) -> rx.Component:
             ),
         ),
         # rx.color_mode.button(position="bottom-left"),
-        id="my-base-container",
     )

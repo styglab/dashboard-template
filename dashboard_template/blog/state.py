@@ -2,8 +2,10 @@ import reflex as rx
 from typing import List, Optional
 from sqlmodel import select
 from datetime import datetime, timezone, timedelta
+import sqlalchemy
 #
-from .model import BlogPostModel
+from ..auth.state import SessionState
+from ..models import BlogPostModel, UserInfo
 from .. import navigation
 #
 #
@@ -11,7 +13,7 @@ BLOG_POSTS_ROUTE = navigation.routes.BLOG_POSTS_ROUTE
 if BLOG_POSTS_ROUTE.endswith("/"):
     BLOG_POSTS_ROUTE = BLOG_POSTS_ROUTE[:-1]
 
-class BlogPostState(rx.State):
+class BlogPostState(SessionState):
     posts: List[BlogPostModel] = []
     post: Optional[BlogPostModel] = None
     post_content: str = ""
@@ -34,16 +36,17 @@ class BlogPostState(rx.State):
             return f"{BLOG_POSTS_ROUTE}"
         return f"{BLOG_POSTS_ROUTE}/{self.post.id}/edit"
 
-    def load_posts(self, published_only=False):
-        lookup_args = ()
-        if published_only:
-            lookup_args = (
-                (BlogPostModel.publish_active == True) &
-                (BlogPostModel.publish_date < datetime.now(timezone(timedelta(hours=9))))
-            )
+    def load_posts(self, *args, **kwargs):
+        #if published_only:
+        #    lookup_args = (
+        #        (BlogPostModel.publish_active == True) &
+        #        (BlogPostModel.publish_date < datetime.now(timezone(timedelta(hours=9))))
+        #    )
         with rx.session() as session:
             result = session.exec(
-                select(BlogPostModel).where(*lookup_args)
+                select(BlogPostModel).options(
+                    sqlalchemy.orm.joinedload(BlogPostModel.userinfo)
+                ).where(BlogPostModel.userinfo_id == self.my_userinfo_id)
             ).all()
             self.posts = result
             
@@ -57,15 +60,32 @@ class BlogPostState(rx.State):
             self.post = post
             
     def get_post_detail(self):
+        if self.my_userinfo_id is None:
+            self.post = None
+            self.post_content = ""
+            self.post_publish_active = False
+            return
+        lookups = (
+            (BlogPostModel.id == self.blog_post_id) &
+            (BlogPostModel.userinfo_id == self.my_userinfo_id)
+        )
         with rx.session() as session:
             if self.blog_post_id == "":
                 self.post = None
                 return
-            result = session.exec(
-                select(BlogPostModel).where(
-                    BlogPostModel.id == self.blog_post_id
+            
+            #sql_statement = select(BlogPostModel).where(
+            #    BlogPostModel.id == self.blog_post_id
+            #    )
+            sql_statement = select(BlogPostModel).options(
+                    sqlalchemy.orm.joinedload(BlogPostModel.userinfo).joinedload(UserInfo.user)
+                ).where(
+                    *lookups
                 )
-            ).one_or_none()
+            
+            result = session.exec(sql_statement).one_or_none()
+            # if result.userinfo: # db lookup
+            #     result.userinfo.user
             self.post = result
             if result is None:
                 self.post_content = ""
@@ -100,8 +120,12 @@ class BlogAddPostFormState(BlogPostState):
     form_data: dict = {}
     
     def handle_submit(self, form_data):
-        self.form_data = form_data
-        self.add_post(form_data)
+        data = form_data.copy()
+        if self.my_userinfo_id is not None:
+            data['userinfo_id'] = self.my_userinfo_id
+        self.form_data = data
+        print(data)
+        self.add_post(data)
         return self.to_blog_post(edit_page=True) # redirect
         
 class BlogEditFormState(BlogPostState):

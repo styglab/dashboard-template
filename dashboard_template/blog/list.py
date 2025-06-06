@@ -1,11 +1,13 @@
 import reflex as rx
+import reflex_local_auth
 #
+from . import state
 from .. import navigation
 from ..ui.base import base_page
-from . import state, model
+from ..models import BlogPostModel
 #
 #
-def blog_post_detail_link(child: rx.Component, post: model.BlogPostModel):
+def blog_post_detail_link(child: rx.Component, post: BlogPostModel):
     if post is None:
         return rx.fragment(child)
     post_id = post.id
@@ -15,10 +17,11 @@ def blog_post_detail_link(child: rx.Component, post: model.BlogPostModel):
     post_detail_url = f"{root_path}/{post_id}"
     return rx.link(
         child,
+        rx.text("by ", post.userinfo.email),
         href=post_detail_url
     )
 
-def blog_post_list_item(post: model.BlogPostModel) -> rx.Component:
+def blog_post_list_item(post: BlogPostModel) -> rx.Component:
     return rx.box(
         blog_post_detail_link(
             rx.heading(post.title),
@@ -26,6 +29,7 @@ def blog_post_list_item(post: model.BlogPostModel) -> rx.Component:
         )
     )
 
+@reflex_local_auth.require_login
 def blog_post_list_page() -> rx.Component:
     return base_page(
         rx.vstack(

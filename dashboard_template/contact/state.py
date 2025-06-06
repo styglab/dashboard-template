@@ -3,11 +3,11 @@ import asyncio
 from sqlmodel import select
 from typing import List
 #
-from .model import ContactEntryModel
+from ..models import ContactEntryModel
 from ..auth.state import SessionState
 #
 #
-class ContactState(rx.State):
+class ContactState(SessionState):
     form_data: dict = {}
     entries: List[ContactEntryModel] = []
     submit_tf: bool = False
@@ -26,13 +26,17 @@ class ContactState(rx.State):
             if v == "" or v is None:
                 continue
             data[k] = v
+        if self.my_user_id is not None:
+            data["user_id"] = self.my_user_id
+        if self.my_userinfo_id is not None:
+            data["userinfo_id"] = self.my_userinfo_id
         with rx.session() as session:
             db_entry = ContactEntryModel(
                 **data
             )
             session.add(db_entry)
             session.commit()
-            print(form_data)
+            # print(form_data)
             self.submit_tf = True
             yield
         await asyncio.sleep(2)

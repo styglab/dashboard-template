@@ -3,7 +3,7 @@ import reflex_local_auth
 from typing import Optional
 import sqlmodel
 #
-from .models import UserInfo
+from ..models import UserInfo
 
 class MyRegisterState(reflex_local_auth.RegistrationState):
     # This event handler must be named something besides `handle_registration`!!!
@@ -23,7 +23,13 @@ class MyRegisterState(reflex_local_auth.RegistrationState):
 class SessionState(reflex_local_auth.LocalAuthState):
 
     @rx.var(cache=True)
-    def my_user_id(self) -> Optional[str]:
+    def my_userinfo_id(self) -> Optional[int]:
+        if self.authenticated_user_info is None:
+            return None
+        return self.authenticated_user_info.id
+
+    @rx.var(cache=True)
+    def my_user_id(self) -> Optional[int]:
         if self.authenticated_user.id < 0:
             return None
         return self.authenticated_user.id
@@ -46,6 +52,8 @@ class SessionState(reflex_local_auth.LocalAuthState):
             ).one_or_none()
             if result is None:
                 return None
+            # database lookup
+            # result.user
             # user_obj = result.user
             # print(result.user)
             return result

@@ -1,15 +1,17 @@
 import reflex as rx
 #
+from . import form, state
 from .. import navigation
 from ..ui.base import base_page
-from . import form, state, model
+from ..models import ContactEntryModel
 #
 #
-def contact_entry_list_item(contact: model.ContactEntryModel) -> rx.Component:
+def contact_entry_list_item(contact: ContactEntryModel) -> rx.Component:
     return rx.box(
         rx.heading(contact.first_name),
         rx.text(contact.created_at),
         rx.text(contact.message),
+        rx.text(contact.user_id),
         padding='1em'
     )
 

@@ -8,6 +8,5 @@ def main_page(child: rx.Component, *args):
             width="100%",
             id="my-content-box",
         ),
-        id="my-main-container",
     )
     
